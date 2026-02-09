@@ -44,6 +44,9 @@ COPY security_auditor/ ./security_auditor/
 COPY .env.example .env
 COPY start_server.sh ./
 
+# Install CPU-only PyTorch first (reduces image from 6.7GB to ~3.5GB)
+RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
+
 # Install Python dependencies
 RUN pip install --no-cache-dir -r rag_engine/requirements.txt && \
     pip install --no-cache-dir -r security_auditor/requirements.txt
