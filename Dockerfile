@@ -9,11 +9,9 @@ RUN apt-get update && apt-get install -y \
     cmake \
     make \
     libpoppler-cpp-dev \
+    pybind11-dev \
     git \
     && rm -rf /var/lib/apt/lists/*
-
-# Install pybind11
-RUN pip install pybind11
 
 # Copy C++ source
 WORKDIR /app
