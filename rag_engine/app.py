@@ -11,6 +11,10 @@ import sys
 import os
 from typing import Optional, List, Dict
 import tempfile
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Add paths
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../cpp_engine/build"))
@@ -25,6 +29,110 @@ from signature_verifier import SignatureVerifier
 
 
 # Pydantic models
+class QueryRequest(BaseModel):
+    question: str
+    n_chunks: int = 3
+    include_security: bool = True
+
+
+class SecurityWarning(BaseModel):
+    type: str
+    severity: str
+    message: str
+    details: Optional[Dict] = None
+
+
+class QueryResponse(BaseModel):
+    answer: str
+    sources: List[Dict]
+    security_warnings: List[SecurityWarning] = []
+    metadata: Optional[Dict] = None
+
+
+class UploadResponse(BaseModel):
+    filename: str
+    total_chunks: int
+    unique_chunks: int
+    integrity_verified: bool
+    security_analysis: Dict
+    warnings: List[str]
+    message: str
+
+
+# Initialize FastAPI app
+app = FastAPI(
+    title="GuardianPDF API - Audit-First Edition",
+    description="PDF assistant with RAG and AI integrity verification",
+    version="2.0.0"
+)
+
+# CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Global instances
+embedding_generator: Optional[EmbeddingGenerator] = None
+vector_store: Optional[VectorStore] = None
+rag_pipeline: Optional[RAGPipeline] = None
+perplexity_analyzer: Optional[PerplexityAnalyzer] = None
+signature_verifier: Optional[SignatureVerifier] = None
+
+# Store AI analysis results per PDF
+ai_analysis_cache: Dict[str, List[Dict]] = {}
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize all components."""
+    global embedding_generator, vector_store, rag_pipeline
+    global perplexity_analyzer, signature_verifier
+    
+    print("🚀 Initializing GuardianPDF with Security Features...")
+    
+    # Module 2: RAG components
+    embedding_generator = EmbeddingGenerator()
+    
+    persist_dir = os.getenv("CHROMA_PERSIST_DIR", "./chroma_db")
+    vector_store = VectorStore(persist_directory=persist_dir)
+    
+    # Initialize RAG with provider from environment
+    provider = os.getenv("LLM_PROVIDER", "nvidia").lower()
+    
+    if provider == "nvidia":
+        api_key = os.getenv("NVIDIA_API_KEY")
+        model = os.getenv("NVIDIA_MODEL", "meta/llama3-70b-instruct")
+        
+        if not api_key:
+            print("⚠️  NVIDIA_API_KEY not found in environment")
+            print("   Set it in .env file or environment variables")
+            print("   Falling back to Ollama...")
+            provider = "ollama"
+    
+    try:
+        rag_pipeline = RAGPipeline(
+            vector_store=vector_store,
+            embedding_generator=embedding_generator,
+            provider=provider,
+            model_name=model if provider == "nvidia" else None,
+            api_key=api_key if provider == "nvidia" else None
+        )
+    except Exception as e:
+        print(f"❌ Error initializing RAG pipeline: {e}")
+        print("   Please check your configuration")
+        raise
+    
+    # Module 3: Security components
+    perplexity_analyzer = PerplexityAnalyzer()
+    signature_verifier = SignatureVerifier()
+    
+    print("✅ GuardianPDF ready with security auditing!")
+    print(f"   Provider: {provider.upper()}")
+    print(f"   Model: {rag_pipeline.model_name}")
 class QueryRequest(BaseModel):
     question: str
     n_chunks: int = 3
