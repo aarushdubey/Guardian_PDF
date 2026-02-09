@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: guardianpdf
+    runtime: docker
+    repo: https://github.com/aarushdubey/Guardian_PDF
+    region: singapore  # Closest to India
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: ./
+    envVars:
+      - key: LLM_PROVIDER
+        value: nvidia
+      - key: NVIDIA_MODEL
+        value: meta/llama3-70b-instruct
+      - key: CHROMA_PERSIST_DIR
+        value: /data/chroma_db
+      - key: NVIDIA_API_KEY
+        sync: false  # Set this manually in Render dashboard
+    disk:
+      name: chroma-data
+      mountPath: /data/chroma_db
+      sizeGB: 1
+    healthCheckPath: /health
+    autoDeploy: true
