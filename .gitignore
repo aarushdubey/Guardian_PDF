@@ -1,0 +1,70 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+dist/
+build/
+
+# C++
+*.o
+*.a
+*.dylib
+*.so
+*.exe
+*.out
+cpp_engine/build/
+!cpp_engine/build/.gitkeep
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# ChromaDB
+chroma_db/
+*.db
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# HuggingFace cache
+.huggingface/
+transformers_cache/
+
+# Ollama (if local models stored)
+*.gguf
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Test outputs
+test_results/
+*.pdf
+!docs/*.pdf
+
+# Environment variables
+.env
+.env.local

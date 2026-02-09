@@ -1,0 +1,5 @@
+# GuardianPDF Security Auditor Requirements
+
+transformers>=4.41.0
+torch>=1.11.0
+pypdf>=5.1.0
