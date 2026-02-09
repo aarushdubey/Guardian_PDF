@@ -54,8 +54,8 @@ RUN pip install --no-cache-dir -r rag_engine/requirements.txt && \
 RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')" && \
     python -c "from transformers import GPT2LMHeadModel, GPT2Tokenizer; GPT2LMHeadModel.from_pretrained('gpt2'); GPT2Tokenizer.from_pretrained('gpt2')"
 
-# Create volume for ChromaDB
-VOLUME ["/app/chroma_db"]
+# Create directory for ChromaDB (Railway volumes will mount here)
+RUN mkdir -p /app/chroma_db
 
 # Expose port
 EXPOSE 8000
