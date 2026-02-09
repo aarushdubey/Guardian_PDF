@@ -31,7 +31,7 @@ FROM python:3.13-slim
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y \
-    libpoppler-cpp0v5 \
+    libpoppler-cpp-dev \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
