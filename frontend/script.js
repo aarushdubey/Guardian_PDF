@@ -101,14 +101,18 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     async function handleUpload(file) {
-        if (file.type !== 'application/pdf') return alert('Only PDF files are supported');
+        if (file.type !== 'application/pdf') {
+            alert('Only PDF files are supported');
+            return;
+        }
 
         elements.upload.progress.classList.remove('hidden');
         elements.upload.result.classList.add('hidden');
 
         const formData = new FormData();
         formData.append('file', file);
-        formData.append('verify_integrity', elements.upload.verify.checked);
+        // Convert checkbox boolean to string because FormData treats everything as string
+        formData.append('verify_integrity', elements.upload.verify.checked.toString());
 
         try {
             const res = await fetch('/upload_pdf', {
@@ -116,23 +120,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: formData
             });
 
+            const contentType = res.headers.get("content-type");
             if (res.ok) {
-                const data = await res.json();
-                showUploadResult(data, true);
-                fetchStats(); // Refresh stats
+                if (contentType && contentType.indexOf("application/json") !== -1) {
+                    const data = await res.json();
+                    showUploadResult(data, true);
+                    fetchStats(); // Refresh stats
+                } else {
+                    const text = await res.text();
+                    showUploadResult({ detail: "Upload successful but received non-JSON response: " + text }, true);
+                }
             } else {
                 let errorMsg = 'Upload failed';
-                try {
-                    const errorData = await res.json();
-                    errorMsg = errorData.detail || errorMsg;
-                } catch (e) {
-                    const text = await res.text();
-                    errorMsg = text ? `Server Error (${res.status}): ${text}` : `Server Error (${res.status})`;
+                if (contentType && contentType.indexOf("application/json") !== -1) {
+                    try {
+                        const errorData = await res.json();
+                        errorMsg = errorData.detail || errorMsg;
+                    } catch (e) {
+                        // Fallback if JSON parse fails despite header
+                        errorMsg = await res.text();
+                    }
+                } else {
+                    errorMsg = await res.text();
                 }
-                showUploadResult({ detail: errorMsg }, false);
+                showUploadResult({ detail: errorMsg || `Server Error (${res.status})` }, false);
             }
         } catch (e) {
-            showUploadResult({ detail: e.message }, false);
+            console.error("Upload error:", e);
+            showUploadResult({ detail: "Network or Script Error: " + e.message }, false);
         } finally {
             elements.upload.progress.classList.add('hidden');
         }
