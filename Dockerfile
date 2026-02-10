@@ -54,7 +54,7 @@ RUN pip install --no-cache-dir -r rag_engine/requirements.txt && \
 
 # Pre-download models (optional, increases image size but faster startup)
 RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')" && \
-    python -c "from transformers import GPT2LMHeadModel, GPT2Tokenizer; GPT2LMHeadModel.from_pretrained('gpt2'); GPT2Tokenizer.from_pretrained('gpt2')"
+    python -c "from transformers import GPT2LMHeadModel, GPT2Tokenizer; GPT2LMHeadModel.from_pretrained('distilgpt2'); GPT2Tokenizer.from_pretrained('distilgpt2')"
 
 # Create directory for ChromaDB (Railway volumes will mount here)
 RUN mkdir -p /app/chroma_db

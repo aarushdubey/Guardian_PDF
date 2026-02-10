@@ -24,12 +24,12 @@ class PerplexityAnalyzer:
     Lower perplexity indicates more "AI-like" text.
     """
     
-    def __init__(self, model_name: str = "gpt2"):
+    def __init__(self, model_name: str = "distilgpt2"):
         """
         Initialize perplexity analyzer.
         
         Args:
-            model_name: HuggingFace model (default: gpt2)
+            model_name: HuggingFace model (default: distilgpt2)
         """
         print(f"Loading perplexity model: {model_name}...")
         self.tokenizer = GPT2Tokenizer.from_pretrained(model_name)

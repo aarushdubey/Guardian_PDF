@@ -135,85 +135,7 @@ async def startup_event():
     print("✅ GuardianPDF ready with security auditing!")
     print(f"   Provider: {provider.upper()}")
     print(f"   Model: {rag_pipeline.model_name}")
-class QueryRequest(BaseModel):
-    question: str
-    n_chunks: int = 3
-    include_security: bool = True
 
-
-class SecurityWarning(BaseModel):
-    type: str
-    severity: str
-    message: str
-    details: Optional[Dict] = None
-
-
-class QueryResponse(BaseModel):
-    answer: str
-    sources: List[Dict]
-    security_warnings: List[SecurityWarning] = []
-    metadata: Optional[Dict] = None
-
-
-class UploadResponse(BaseModel):
-    filename: str
-    total_chunks: int
-    unique_chunks: int
-    integrity_verified: bool
-    security_analysis: Dict
-    warnings: List[str]
-    message: str
-
-
-# Initialize FastAPI app
-app = FastAPI(
-    title="GuardianPDF API - Audit-First Edition",
-    description="PDF assistant with RAG and AI integrity verification",
-    version="2.0.0"
-)
-
-# CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Global instances
-embedding_generator: Optional[EmbeddingGenerator] = None
-vector_store: Optional[VectorStore] = None
-rag_pipeline: Optional[RAGPipeline] = None
-perplexity_analyzer: Optional[PerplexityAnalyzer] = None
-signature_verifier: Optional[SignatureVerifier] = None
-
-# Store AI analysis results per PDF
-ai_analysis_cache: Dict[str, List[Dict]] = {}
-
-
-@app.on_event("startup")
-async def startup_event():
-    """Initialize all components."""
-    global embedding_generator, vector_store, rag_pipeline
-    global perplexity_analyzer, signature_verifier
-    
-    print("🚀 Initializing GuardianPDF with Security Features...")
-    
-    # Module 2: RAG components
-    embedding_generator = EmbeddingGenerator()
-    vector_store = VectorStore(persist_directory="./chroma_db")
-    rag_pipeline = RAGPipeline(
-        vector_store=vector_store,
-        embedding_generator=embedding_generator,
-        model_name="llama3.2:latest"
-    )
-    
-    # Module 3: Security components
-    perplexity_analyzer = PerplexityAnalyzer()
-    signature_verifier = SignatureVerifier()
-    
-    print("✅ GuardianPDF ready with security auditing!")
 
 
 @app.get("/api/health")
@@ -275,33 +197,69 @@ async def upload_pdf(file: UploadFile = File(...), verify_integrity: bool = True
         
         # Step 3: AI detection
         print(f"🔍 Analyzing for AI-generated content...")
-        ai_analysis = perplexity_analyzer.analyze_multiple(chunks)
-        ai_summary = perplexity_analyzer.get_document_summary(ai_analysis)
-        
-        # Cache AI analysis for this PDF
-        ai_analysis_cache[file.filename] = ai_analysis
-        
-        # Add AI warnings
-        if ai_summary["warning_level"] in ["MEDIUM", "HIGH"]:
-            warnings.append(
-                f"{ai_summary['overall_label']} ({ai_summary['ai_percentage']}% AI)"
-            )
+        try:
+            ai_analysis = perplexity_analyzer.analyze_multiple(chunks)
+            ai_summary = perplexity_analyzer.get_document_summary(ai_analysis)
+            
+            # Cache AI analysis for this PDF
+            ai_analysis_cache[file.filename] = ai_analysis
+            
+            # Add AI warnings
+            if ai_summary["warning_level"] in ["MEDIUM", "HIGH"]:
+                warnings.append(
+                    f"{ai_summary['overall_label']} ({ai_summary['ai_percentage']}% AI)"
+                )
+        except Exception as e:
+            print(f"⚠️  AI Detection skipped due to resource limits: {e}")
+            # Generate placeholder analysis
+            ai_analysis = [
+                {
+                    "perplexity": 0,
+                    "is_ai": None,
+                    "confidence": 0,
+                    "label": "Analysis Skipped"
+                }
+                for _ in chunks
+            ]
+            ai_summary = {
+                "overall_label": "AI Check Skipped (Resource Limit)",
+                "warning_level": "LOW",
+                "ai_percentage": 0,
+                "ai_chunks": 0,
+                "uncertain_chunks": len(chunks),
+                "human_chunks": 0,
+                "average_perplexity": 0
+            }
+            warnings.append("AI Detection skipped (Server Load)")
         
         # Step 4: Generate embeddings
         print(f"🧮 Generating embeddings...")
         embeddings = embedding_generator.generate(chunks)
         
         # Step 5: Store with security metadata
-        metadata = [
-            {
-                "source": file.filename,
-                "chunk_index": i,
-                "ai_probability": result["confidence"] if result["is_ai"] else 0,
-                "perplexity": result["perplexity"],
-                "security_label": result["label"]
-            }
-            for i, result in enumerate(ai_analysis)
-        ]
+        if not ai_analysis:
+            # Fallback metadata if AI check skipped
+            metadata = [
+                {
+                    "source": file.filename,
+                    "chunk_index": i,
+                    "ai_probability": 0,
+                    "perplexity": 0,
+                    "security_label": "Checking Skipped"
+                }
+                for i in range(len(chunks))
+            ]
+        else:
+            metadata = [
+                {
+                    "source": file.filename,
+                    "chunk_index": i,
+                    "ai_probability": result["confidence"] if result["is_ai"] else 0,
+                    "perplexity": result["perplexity"],
+                    "security_label": result["label"]
+                }
+                for i, result in enumerate(ai_analysis)
+            ]
         
         vector_store.add_chunks(
             chunks=chunks,
