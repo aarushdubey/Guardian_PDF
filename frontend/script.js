@@ -116,13 +116,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: formData
             });
 
-            const data = await res.json();
-
             if (res.ok) {
+                const data = await res.json();
                 showUploadResult(data, true);
                 fetchStats(); // Refresh stats
             } else {
-                showUploadResult(data, false);
+                let errorMsg = 'Upload failed';
+                try {
+                    const errorData = await res.json();
+                    errorMsg = errorData.detail || errorMsg;
+                } catch (e) {
+                    const text = await res.text();
+                    errorMsg = text ? `Server Error (${res.status}): ${text}` : `Server Error (${res.status})`;
+                }
+                showUploadResult({ detail: errorMsg }, false);
             }
         } catch (e) {
             showUploadResult({ detail: e.message }, false);
