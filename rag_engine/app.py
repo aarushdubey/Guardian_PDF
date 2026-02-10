@@ -5,6 +5,8 @@ Integrates Module 3 (Security Auditor) with Modules 1 & 2.
 """
 
 from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import sys
@@ -214,8 +216,8 @@ async def startup_event():
     print("✅ GuardianPDF ready with security auditing!")
 
 
-@app.get("/")
-async def root():
+@app.get("/api/health")
+async def health_check():
     """Health check."""
     return {
         "service": "GuardianPDF - Audit-First Edition",
@@ -414,12 +416,19 @@ async def get_stats():
     }
 
 
+
+
+
 @app.delete("/clear")
 async def clear_database():
     """Clear all data."""
     vector_store.clear()
     ai_analysis_cache.clear()
     return {"message": "Database and cache cleared"}
+
+
+# Mount frontend files (must be last to avoid overriding API routes)
+app.mount("/", StaticFiles(directory="../frontend", html=True), name="frontend")
 
 
 if __name__ == "__main__":

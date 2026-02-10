@@ -16,8 +16,9 @@ fi
 # Activate virtual environment
 source venv/bin/activate
 
-# Start FastAPI server
-echo "Starting FastAPI backend on http://localhost:8000"
+# Start GuardianPDF Web Interface
+echo "Starting GuardianPDF Web Interface on http://localhost:8000"
+echo "API checks available at http://localhost:8000/api/health"
 echo ""
 cd rag_engine
 python app.py

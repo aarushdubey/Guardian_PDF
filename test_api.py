@@ -16,7 +16,7 @@ BASE_URL = "http://localhost:8000"
 def test_health():
     """Test health endpoint."""
     print("Testing health endpoint...")
-    response = requests.get(f"{BASE_URL}/")
+    response = requests.get(f"{BASE_URL}/api/health")
     print(f"Status: {response.status_code}")
     print(f"Response: {response.json()}\n")
     return response.status_code == 200

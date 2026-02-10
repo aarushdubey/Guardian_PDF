@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GuardianPDF - AI Security Auditor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <i class="fa-solid fa-shield-halved"></i>
+                <span>GuardianPDF</span>
+            </div>
+            
+            <nav class="nav-menu">
+                <button class="nav-item active" data-tab="dashboard">
+                    <i class="fa-solid fa-chart-pie"></i> Dashboard
+                </button>
+                <button class="nav-item" data-tab="upload">
+                    <i class="fa-solid fa-file-pdf"></i> Upload & Analyze
+                </button>
+                <button class="nav-item" data-tab="chat">
+                    <i class="fa-solid fa-comments"></i> Query RAG
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="status-indicator">
+                    <span class="status-dot"></span>
+                    <span id="system-status">System Online</span>
+                </div>
+                <div class="version">v2.0.0 Audit-First</div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="top-bar">
+                <h1 id="page-title">Dashboard</h1>
+                <div class="actions">
+                    <button id="refresh-stats" class="icon-btn" title="Refresh Stats">
+                        <i class="fa-solid fa-rotate-right"></i>
+                    </button>
+                    <button id="clear-db" class="icon-btn danger" title="Clear Database">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Views -->
+            
+            <!-- Dashboard View -->
+            <div id="view-dashboard" class="view active">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fa-solid fa-database"></i></div>
+                        <div class="stat-info">
+                            <h3>Vector Chunks</h3>
+                            <p id="stat-vectors">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fa-solid fa-robot"></i></div>
+                        <div class="stat-info">
+                            <h3>RAG Model</h3>
+                            <p id="stat-model">Loading...</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fa-solid fa-shield-virus"></i></div>
+                        <div class="stat-info">
+                            <h3>Security Checks</h3>
+                            <p id="stat-security">Active</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fa-solid fa-file-circle-check"></i></div>
+                        <div class="stat-info">
+                            <h3>Cached Docs</h3>
+                            <p id="stat-docs">0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-section">
+                    <h2>Recent Activity</h2>
+                    <div class="empty-state" id="activity-log">
+                        <i class="fa-regular fa-clock"></i>
+                        <p>No recent activity recorded.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Upload View -->
+            <div id="view-upload" class="view">
+                <div class="upload-container">
+                    <div class="upload-area" id="drop-zone">
+                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                        <h3>Drag & Drop PDF Here</h3>
+                        <p>or click to browse</p>
+                        <input type="file" id="file-input" accept=".pdf" hidden>
+                    </div>
+                    
+                    <div class="upload-options">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="verify-integrity" checked>
+                            <span class="slider"></span>
+                            <span class="label-text">Verify Integrity & AI Check</span>
+                        </label>
+                    </div>
+
+                    <div id="upload-progress" class="hidden">
+                        <div class="progress-bar">
+                            <div class="progress-fill"></div>
+                        </div>
+                        <p id="progress-text">Processing...</p>
+                    </div>
+
+                    <div id="upload-result" class="result-card hidden">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat View -->
+            <div id="view-chat" class="view">
+                <div class="chat-container">
+                    <div class="chat-messages" id="chat-history">
+                        <div class="message system">
+                            <div class="avatar"><i class="fa-solid fa-robot"></i></div>
+                            <div class="content">
+                                <p>Hello! I'm GuardianPDF. Upload a document to start analyzing securely.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="chat-input-area">
+                        <div class="input-wrapper">
+                            <textarea id="chat-input" placeholder="Ask a question about your documents..."></textarea>
+                            <button id="send-btn">
+                                <i class="fa-solid fa-paper-plane"></i>
+                            </button>
+                        </div>
+                        <div class="chat-options">
+                            <label>
+                                <input type="checkbox" id="chat-security" checked> Include Security Audit
+                            </label>
+                            <select id="chat-chunks">
+                                <option value="3">3 Chunks</option>
+                                <option value="5">5 Chunks</option>
+                                <option value="10">10 Chunks</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Modal for detailed analysis -->
+        <div id="analysis-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Detailed Security Analysis</h2>
+                    <button class="close-modal"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div class="modal-body" id="analysis-content">
+                    <!-- Content injected here -->
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
