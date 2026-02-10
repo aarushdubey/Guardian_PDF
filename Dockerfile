@@ -41,6 +41,7 @@ COPY --from=cpp-builder /app/cpp_engine/build/*.so ./cpp_engine/build/
 # Copy Python code
 COPY rag_engine/ ./rag_engine/
 COPY security_auditor/ ./security_auditor/
+COPY frontend/ ./frontend/
 COPY .env.example .env
 COPY start_server.sh ./
 

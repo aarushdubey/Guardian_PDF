@@ -428,7 +428,11 @@ async def clear_database():
 
 
 # Mount frontend files (must be last to avoid overriding API routes)
-app.mount("/", StaticFiles(directory="../frontend", html=True), name="frontend")
+frontend_path = os.path.join(os.path.dirname(__file__), "../frontend")
+if os.path.exists(frontend_path):
+    app.mount("/", StaticFiles(directory=frontend_path, html=True), name="frontend")
+else:
+    print(f"⚠️ Warning: Frontend directory not found at {frontend_path}")
 
 
 if __name__ == "__main__":
