@@ -173,6 +173,10 @@ async def upload_pdf(file: UploadFile = File(...), verify_integrity: bool = True
     try:
         warnings = []
         
+        # Ensure embedding model is unloaded to free space for AI detection
+        if embedding_generator:
+            embedding_generator.unload_model()
+        
         # Step 1: Integrity verification
         integrity_result = {"verified": True}
         if verify_integrity:
@@ -196,6 +200,7 @@ async def upload_pdf(file: UploadFile = File(...), verify_integrity: bool = True
             raise HTTPException(status_code=400, detail="No text extracted")
         
         # Step 3: AI detection
+        # (PerplexityAnalyzer handles its own loading/unloading)
         print(f"🔍 Analyzing for AI-generated content...")
         try:
             ai_analysis = perplexity_analyzer.analyze_multiple(chunks)
@@ -238,6 +243,8 @@ async def upload_pdf(file: UploadFile = File(...), verify_integrity: bool = True
         
         # Step 4: Generate embeddings
         print(f"🧮 Generating embeddings...")
+        # Explicitly load model now
+        embedding_generator.load_model()
         embeddings = embedding_generator.generate(chunks)
         
         # Step 5: Store with security metadata
@@ -272,6 +279,9 @@ async def upload_pdf(file: UploadFile = File(...), verify_integrity: bool = True
             pdf_name=file.filename
         )
         
+        # Unload embedding model to save memory for next request
+        embedding_generator.unload_model()
+        
         return UploadResponse(
             filename=file.filename,
             total_chunks=len(chunks),
@@ -283,6 +293,11 @@ async def upload_pdf(file: UploadFile = File(...), verify_integrity: bool = True
         )
         
     except Exception as e:
+        # Ensure cleanup even on error
+        if embedding_generator:
+            embedding_generator.unload_model()
+        if perplexity_analyzer:
+            perplexity_analyzer.unload_model()
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
     
     finally:
@@ -298,12 +313,18 @@ async def query_pdf(request: QueryRequest):
     Returns answer with warnings if sources contain AI-generated content.
     """
     try:
+        # Ensure embedding model is loaded for query embedding
+        embedding_generator.load_model()
+        
         # Get RAG answer
         result = rag_pipeline.query(
             question=request.question,
             n_chunks=request.n_chunks,
             include_metadata=True
         )
+        
+        # Unload model after query
+        embedding_generator.unload_model()
         
         # Add security warnings
         security_warnings = []
