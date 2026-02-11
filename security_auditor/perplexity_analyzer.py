@@ -26,37 +26,49 @@ class PerplexityAnalyzer:
     
     def __init__(self, model_name: str = "distilgpt2"):
         """
-        Initialize perplexity analyzer.
+        Initialize perplexity analyzer configuration (lazy loading).
         
         Args:
             model_name: HuggingFace model (default: distilgpt2)
         """
-        print(f"Loading perplexity model: {model_name}...")
-        self.tokenizer = GPT2Tokenizer.from_pretrained(model_name)
-        self.model = GPT2LMHeadModel.from_pretrained(model_name)
+        print(f"Configuring perplexity model: {model_name} (Lazy Load)")
+        self.model_name = model_name
+        self.tokenizer = None
+        self.model = None
+        
+    def load_model(self):
+        """Load model into memory."""
+        if self.model is not None:
+            return
+            
+        print(f"Loading perplexity model: {self.model_name}...")
+        self.tokenizer = GPT2Tokenizer.from_pretrained(self.model_name)
+        self.model = GPT2LMHeadModel.from_pretrained(self.model_name)
         self.model.eval()
         
-        # Set pad token
         if self.tokenizer.pad_token is None:
             self.tokenizer.pad_token = self.tokenizer.eos_token
+            
+        print("✅ Perplexity model loaded")
         
-        print("✅ Perplexity analyzer ready")
+    def unload_model(self):
+        """Unload model from memory."""
+        print("Unloading perplexity model to free memory...")
+        self.tokenizer = None
+        self.model = None
+        import gc
+        gc.collect()
+        print("✅ Perplexity model unloaded")
     
     def calculate_perplexity(self, text: str, max_length: int = 512) -> float:
-        """
-        Calculate perplexity for a text chunk.
-        
-        Args:
-            text: Input text
-            max_length: Maximum sequence length
+        """Calculate perplexity with error handling for unloaded model."""
+        if self.model is None:
+            raise RuntimeError("Model not loaded. Call load_model() first.")
             
-        Returns:
-            Perplexity score (lower = more predictable/AI-like)
-        """
         if not text.strip():
             return float('inf')
         
-        # Tokenize
+        # Tokenize (cpu only)
         encodings = self.tokenizer(
             text,
             return_tensors='pt',
@@ -74,21 +86,7 @@ class PerplexityAnalyzer:
         return perplexity
     
     def analyze_chunk(self, text: str) -> Dict[str, any]:
-        """
-        Analyze a chunk and classify as AI or human.
-        
-        Thresholds (empirically determined):
-        - Perplexity < 30: High confidence AI
-        - Perplexity 30-50: Moderate confidence AI
-        - Perplexity 50-100: Uncertain
-        - Perplexity > 100: Likely human
-        
-        Args:
-            text: Text chunk to analyze
-            
-        Returns:
-            Dict with 'perplexity', 'is_ai', 'confidence', 'label'
-        """
+        """Analyze a single chunk."""
         perplexity = self.calculate_perplexity(text)
         
         # Classify
@@ -118,27 +116,28 @@ class PerplexityAnalyzer:
     
     def analyze_multiple(self, chunks: List[str]) -> List[Dict]:
         """
-        Analyze multiple chunks.
-        
-        Args:
-            chunks: List of text chunks
-            
-        Returns:
-            List of analysis results
+        Analyze multiple chunks with automatic model loading/unloading.
         """
         results = []
         
-        print(f"Analyzing {len(chunks)} chunks for AI content...")
-        for i, chunk in enumerate(chunks):
-            result = self.analyze_chunk(chunk)
-            result["chunk_index"] = i
-            results.append(result)
+        try:
+            self.load_model()
             
-            if (i + 1) % 10 == 0:
-                print(f"  Processed {i + 1}/{len(chunks)} chunks")
-        
-        print("✅ Analysis complete")
-        return results
+            print(f"Analyzing {len(chunks)} chunks for AI content...")
+            for i, chunk in enumerate(chunks):
+                result = self.analyze_chunk(chunk)
+                result["chunk_index"] = i
+                results.append(result)
+                
+                if (i + 1) % 10 == 0:
+                    print(f"  Processed {i + 1}/{len(chunks)} chunks")
+            
+            print("✅ Analysis complete")
+            return results
+            
+        finally:
+            # Always ensure we unload to free up RAM for RAG/Vectors
+            self.unload_model()
     
     def get_document_summary(self, analysis_results: List[Dict]) -> Dict:
         """

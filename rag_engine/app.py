@@ -232,6 +232,10 @@ async def upload_pdf(file: UploadFile = File(...), verify_integrity: bool = True
             }
             warnings.append("AI Detection skipped (Server Load)")
         
+        # Explicit garbage collection to free model memory
+        import gc
+        gc.collect()
+        
         # Step 4: Generate embeddings
         print(f"🧮 Generating embeddings...")
         embeddings = embedding_generator.generate(chunks)
